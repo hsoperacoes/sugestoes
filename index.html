@@ -51,7 +51,7 @@
     .card i{font-size:22px;margin-right:10px;color:var(--brand)}
     .card h3{margin:0 0 6px;font-size:18px}
 
-    .hidden{display:none}
+    .hidden{display:none !important}
     .actions{display:flex;gap:10px;margin-top:16px}
     .btn{border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:600}
     .btn-primary{background:linear-gradient(135deg,#43b0ff,#3aa1ff);color:#07101f}
@@ -94,7 +94,7 @@
       </div>
 
       <div class="actions" style="margin-top:14px">
-        <button class="btn btn-primary" onclick="entrarPortal()">Entrar</button>
+        <button class="btn btn-primary" id="btn-entrar" onclick="entrarPortal()">Entrar</button>
       </div>
     </div>
   </div>
@@ -110,15 +110,9 @@
 
     <section class="panel">
       <div class="cards">
-        <div class="card" data-card="produto">
-          <h3><i class="fa-solid fa-shirt"></i>Produto</h3>
-        </div>
-        <div class="card" data-card="ferramentas">
-          <h3><i class="fa-solid fa-screwdriver-wrench"></i>Ferramentas</h3>
-        </div>
-        <div class="card" data-card="geral">
-          <h3><i class="fa-solid fa-lightbulb"></i>Geral</h3>
-        </div>
+        <div class="card" data-card="produto"><h3><i class="fa-solid fa-shirt"></i>Produto</h3></div>
+        <div class="card" data-card="ferramentas"><h3><i class="fa-solid fa-screwdriver-wrench"></i>Ferramentas</h3></div>
+        <div class="card" data-card="geral"><h3><i class="fa-solid fa-lightbulb"></i>Geral</h3></div>
       </div>
 
       <!-- FORM: Produto -->
@@ -272,8 +266,8 @@
     async function atualizarIdentGate(){
       const codigo=$('#g-filial').value; 
       const ident=document.querySelector('input[name="g-ident"]:checked').value==='sim';
-      const btn=document.querySelector('#gate .btn.btn-primary');
-      btn.disabled=true; // bloqueia até terminar
+      const btn=$('#btn-entrar');
+      btn.disabled=true;
       if(ident){
         L.on();
         try{
@@ -297,7 +291,14 @@
         CONTEXTO.ident = ident;
         CONTEXTO.funcionario = ident ? $('#g-func').value : '';
         $('#contexto').textContent = `${CONTEXTO.razao}${CONTEXTO.ident && CONTEXTO.funcionario? ' • '+CONTEXTO.funcionario : ''}`;
-        hide($('#gate')); show($('#site'));
+
+        // Remove completamente o gate do DOM (evita qualquer overlay remanescente)
+        const gate = document.getElementById('gate');
+        if(gate){ gate.parentNode.removeChild(gate); }
+
+        // Exibe o site
+        show(document.getElementById('site'));
+
         // bind dos cards
         document.querySelectorAll('.card').forEach(c=>c.onclick=()=>{
           hide($('#form-produto')); hide($('#form-ferramentas')); hide($('#form-geral'));
