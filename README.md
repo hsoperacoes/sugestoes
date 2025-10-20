@@ -32,19 +32,15 @@
     @media(min-width:900px){ .row.cols-2{grid-template-columns:1fr 1fr} }
 
     label{display:block;margin:8px 0 6px;color:var(--muted);font-size:14px}
-    select,input[type=text],input[type=password],textarea{
+    select,input[type=text],textarea{
       width:100%;background:#0e1626;border:1px solid #243149;border-radius:12px;
       padding:12px 14px;color:var(--txt);outline:none;transition:.2s
     }
     textarea{min-height:120px;resize:vertical}
     select:focus,input:focus,textarea:focus{border-color:#37548a;box-shadow:0 0 0 3px rgba(67,176,255,.18)}
 
-    .chips{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{background:#0f1a2d;border:1px solid #2a3b5f;border-radius:999px;padding:8px 12px;display:flex;gap:8px;align-items:center}
-    .chip button{background:transparent;border:0;color:#9fb4d7;cursor:pointer}
-
     .cards{display:grid;gap:16px;margin-top:10px}
-    @media(min-width:900px){ .cards{grid-template-columns:repeat(3,1fr)} }
+    @media(min-width:900px){ .cards{grid-template-columns:repeat(4,1fr)} }
     .card{background:var(--card);border:1px solid #1d2941;border-radius:var(--radius);
       padding:18px;box-shadow:var(--shadow);cursor:pointer;position:relative;overflow:hidden}
     .card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(17,25,40,.35)}
@@ -56,11 +52,6 @@
     .btn{border:0;border-radius:12px;padding:12px 16px;cursor:pointer;font-weight:600}
     .btn-primary{background:linear-gradient(135deg,#43b0ff,#3aa1ff);color:#07101f}
     .btn-ghost{background:#0e1626;border:1px solid #2b3a5b;color:var(--txt)}
-
-    details.config{margin-top:28px}
-    details.config summary{list-style:none;cursor:pointer;background:#0f1626;border:1px solid #293755;padding:14px 16px;border-radius:12px}
-    details.config[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
-    .config-body{border:1px solid #293755;border-top:0;padding:16px;border-bottom-left-radius:12px;border-bottom-right-radius:12px;background:#0f1626}
 
     .gate{position:fixed;inset:0;background:rgba(7,12,22,.9);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:40}
     .gate-card{width:min(560px,92vw);background:#0f1626;border:1px solid #2a3a5b;border-radius:18px;padding:22px;box-shadow:var(--shadow)}
@@ -113,6 +104,7 @@
         <div class="card" data-card="produto"><h3><i class="fa-solid fa-shirt"></i>Produto</h3></div>
         <div class="card" data-card="ferramentas"><h3><i class="fa-solid fa-screwdriver-wrench"></i>Ferramentas</h3></div>
         <div class="card" data-card="geral"><h3><i class="fa-solid fa-lightbulb"></i>Geral</h3></div>
+        <div class="card" data-card="manutencoes"><h3><i class="fa-solid fa-toolbox"></i>Manutenções</h3></div>
       </div>
 
       <!-- FORM: Produto -->
@@ -179,51 +171,28 @@
           <button class="btn btn-primary" type="submit">Enviar</button>
         </div>
       </form>
-    </section>
 
-    <!-- Configuração (somente gerente) -->
-    <details class="config">
-      <summary><strong>Configuração</strong></summary>
-      <div class="config-body">
+      <!-- FORM: Manutenções -->
+      <form id="form-manutencoes" class="hidden" onsubmit="return enviar(event,'manutencoes')">
+        <h3 style="margin:16px 0 8px">Manutenções</h3>
         <div class="row cols-2">
           <div>
-            <label for="adm-cod">Código da filial</label>
-            <input id="adm-cod" type="text" placeholder="Ex.: 293">
+            <label for="m-equip">Equipamento</label>
+            <input id="m-equip" type="text" placeholder="Ex.: Vaso sanitário" required>
           </div>
           <div>
-            <label for="adm-senha">Senha</label>
-            <input id="adm-senha" type="password" placeholder="Senha de gerente">
+            <label for="m-tipo">Qual manutenção</label>
+            <input id="m-tipo" type="text" placeholder="Ex.: Desentupimento / Elétrica / Hidráulica" required>
           </div>
         </div>
+        <label for="m-obs">Observações</label>
+        <textarea id="m-obs" placeholder="Descreva o que aconteceu (ex.: está entupido, vazando, etc.)" required></textarea>
         <div class="actions">
-          <button class="btn btn-primary" onclick="entrarGerencia()">Entrar</button>
+          <button class="btn btn-ghost" type="button" onclick="resetar()">Cancelar</button>
+          <button class="btn btn-primary" type="submit">Enviar</button>
         </div>
-
-        <div id="gerencia" class="hidden" style="margin-top:14px">
-          <div class="row cols-2">
-            <div>
-              <label>Filial</label>
-              <div id="adm-razao" class="chip">—</div>
-            </div>
-            <div>
-              <label for="adm-novasenha">Alterar senha (opcional)</label>
-              <input id="adm-novasenha" type="password" placeholder="Nova senha">
-            </div>
-          </div>
-
-          <label>Funcionários</label>
-          <div id="adm-funcs" class="chips"></div>
-
-          <div class="row cols-2" style="margin-top:10px">
-            <input id="adm-nome" type="text" placeholder="Nome do funcionário">
-            <div class="actions">
-              <button class="btn btn-ghost" type="button" onclick="addChip()">Adicionar</button>
-              <button class="btn btn-primary" type="button" onclick="salvarGerencia()">Salvar</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </details>
+      </form>
+    </section>
   </div>
 
   <div id="loading" class="loading"><div class="spinner"></div></div>
@@ -292,7 +261,7 @@
         CONTEXTO.funcionario = ident ? $('#g-func').value : '';
         $('#contexto').textContent = `${CONTEXTO.razao}${CONTEXTO.ident && CONTEXTO.funcionario? ' • '+CONTEXTO.funcionario : ''}`;
 
-        // Remove completamente o gate do DOM (evita qualquer overlay remanescente)
+        // Remove completamente o gate do DOM
         const gate = document.getElementById('gate');
         if(gate){ gate.parentNode.removeChild(gate); }
 
@@ -301,7 +270,7 @@
 
         // bind dos cards
         document.querySelectorAll('.card').forEach(c=>c.onclick=()=>{
-          hide($('#form-produto')); hide($('#form-ferramentas')); hide($('#form-geral'));
+          hide($('#form-produto')); hide($('#form-ferramentas')); hide($('#form-geral')); hide($('#form-manutencoes'));
           show($('#form-'+c.dataset.card));
           window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
         });
@@ -309,7 +278,7 @@
     }
 
     // ======== Envio ========
-    function resetar(){ hide($('#form-produto')); hide($('#form-ferramentas')); hide($('#form-geral')) }
+    function resetar(){ hide($('#form-produto')); hide($('#form-ferramentas')); hide($('#form-geral')); hide($('#form-manutencoes')) }
     async function enviar(ev,tipo){
       ev.preventDefault();
       const payload={ action:'submitRegistro', tipo, ...CONTEXTO };
@@ -318,36 +287,17 @@
         payload.tamanho=$('#p-tam').value.trim(); payload.mensagem=$('#p-msg').value.trim();
       } else if(tipo==='ferramentas'){
         payload.subtipo=$('#f-app').value; payload.assunto=$('#f-assunto').value.trim(); payload.mensagem=$('#f-msg').value.trim();
-      } else { payload.mensagem=$('#g-msg').value.trim(); }
+      } else if(tipo==='geral'){
+        payload.mensagem=$('#g-msg').value.trim();
+      } else if(tipo==='manutencoes'){
+        payload.equipamento=$('#m-equip').value.trim();
+        payload.manutencao=$('#m-tipo').value.trim();
+        payload.observacoes=$('#m-obs').value.trim();
+      }
       try{ L.on(); await apiPost(payload); resetar(); ev.target.reset(); alert('Enviado!') }
       catch(err){ alert('Erro: '+err.message) }
       finally{ L.off(); }
       return false;
-    }
-
-    // ======== Gerência ========
-    async function entrarGerencia(){
-      try{
-        L.on();
-        const codigo=$('#adm-cod').value.trim(); const senha=$('#adm-senha').value;
-        const res = await apiPost({action:'authManager', codigo, senha});
-        $('#adm-razao').textContent = `${res.razao} — ${res.codigo}`;
-        const box=$('#adm-funcs'); box.innerHTML=''; res.funcionarios.forEach(n=>criarChip(n));
-        show($('#gerencia'));
-      }catch(err){ alert('Acesso negado: '+err.message) }
-      finally{ L.off(); }
-    }
-    function criarChip(nome){ const box=$('#adm-funcs'); const el=document.createElement('span'); el.className='chip'; el.innerHTML=`<span>${nome}</span> <button>✕</button>`; el.querySelector('button').onclick=()=>el.remove(); box.appendChild(el) }
-    function addChip(){ const v=$('#adm-nome').value.trim(); if(!v) return; criarChip(v); $('#adm-nome').value=''; $('#adm-nome').focus() }
-    async function salvarGerencia(){
-      try{
-        L.on();
-        const codigo=$('#adm-cod').value.trim(); const senha=$('#adm-senha').value; const novaSenha=$('#adm-novasenha').value.trim()||null;
-        const nomes=[...document.querySelectorAll('#adm-funcs .chip span:first-child')].map(s=>s.textContent);
-        await apiPost({action:'updateFuncionarios', codigo, senha, nomes, novaSenha});
-        alert('Configuração salva.');
-      }catch(err){ alert('Erro ao salvar: '+err.message) }
-      finally{ L.off(); }
     }
 
     // start
