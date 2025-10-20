@@ -199,7 +199,7 @@
 
   <script>
     // ======== CONFIG ========
-    const APP_URL = 'https://script.google.com/macros/s/AKfycbwN5XqijIIyPfsRjLFbjNoNW7BRtS2hRhnIiq-evxh2v--Jrx1Sfs03mcUubDlFuixU4Q/exec';
+    const APP_URL = 'https://script.google.com/macros/s/AKfycbxu_jVaotWytMOQh4UCZetFZFOxgk5ePrOkaviDd-qKNPiu2_8BjCaNczAVZzaDwAbj/exec';
     const $ = s=>document.querySelector(s), show=el=>el.classList.remove('hidden'), hide=el=>el.classList.add('hidden');
     const L = {on:()=>document.getElementById('loading').classList.add('show'), off:()=>document.getElementById('loading').classList.remove('show')};
 
