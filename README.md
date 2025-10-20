@@ -65,6 +65,12 @@
     .gate{position:fixed;inset:0;background:rgba(7,12,22,.9);backdrop-filter:blur(4px);display:grid;place-items:center;z-index:40}
     .gate-card{width:min(560px,92vw);background:#0f1626;border:1px solid #2a3a5b;border-radius:18px;padding:22px;box-shadow:var(--shadow)}
     .gate h2{margin:0 0 8px}
+
+    /* Loading overlay */
+    .loading{position:fixed;inset:0;display:none;place-items:center;background:rgba(7,12,22,.72);backdrop-filter:blur(2px);z-index:50}
+    .loading.show{display:grid}
+    .spinner{width:54px;height:54px;border-radius:50%;border:6px solid rgba(255,255,255,.15);border-top-color:#43b0ff;animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
   </style>
 </head>
 <body>
@@ -226,10 +232,13 @@
     </details>
   </div>
 
+  <div id="loading" class="loading"><div class="spinner"></div></div>
+
   <script>
     // ======== CONFIG ========
     const APP_URL = 'https://script.google.com/macros/s/AKfycbwN5XqijIIyPfsRjLFbjNoNW7BRtS2hRhnIiq-evxh2v--Jrx1Sfs03mcUubDlFuixU4Q/exec';
     const $ = s=>document.querySelector(s), show=el=>el.classList.remove('hidden'), hide=el=>el.classList.add('hidden');
+    const L = {on:()=>document.getElementById('loading').classList.add('show'), off:()=>document.getElementById('loading').classList.remove('show')};
 
     let FILIAIS=[]; 
     let CONTEXTO={codigo:'',razao:'',ident:false,funcionario:''};
@@ -246,37 +255,56 @@
 
     // ======== Gate ========
     async function boot(){
-      const {filiais} = await apiGet({fn:'getFiliais'});
-      FILIAIS = filiais;
-      const sel=$('#g-filial'); sel.innerHTML='';
-      filiais.forEach(f=>{ const o=document.createElement('option'); o.value=f.codigo; o.textContent=f.razao; sel.appendChild(o) });
-      atualizarIdentGate();
-      $('#g-filial').addEventListener('change', atualizarIdentGate);
-      document.querySelectorAll('input[name="g-ident"]').forEach(r=>r.addEventListener('change', atualizarIdentGate));
+      try{
+        L.on();
+        const {filiais} = await apiGet({fn:'getFiliais'});
+        FILIAIS = filiais;
+        const sel=$('#g-filial'); sel.innerHTML='';
+        filiais.forEach(f=>{ const o=document.createElement('option'); o.value=f.codigo; o.textContent=f.razao; sel.appendChild(o) });
+        await atualizarIdentGate();
+        $('#g-filial').addEventListener('change', atualizarIdentGate);
+        document.querySelectorAll('input[name="g-ident"]').forEach(r=>r.addEventListener('change', atualizarIdentGate));
+      }catch(err){
+        alert('Erro ao carregar filiais: '+err.message);
+      }finally{ L.off(); }
     }
+
     async function atualizarIdentGate(){
       const codigo=$('#g-filial').value; 
       const ident=document.querySelector('input[name="g-ident"]:checked').value==='sim';
+      const btn=document.querySelector('#gate .btn.btn-primary');
+      btn.disabled=true; // bloqueia até terminar
       if(ident){
-        const list = await apiGet({fn:'getFuncionarios', codigo});
-        const sel=$('#g-func'); sel.innerHTML='';
-        const def=document.createElement('option'); def.value=''; def.selected=true; def.disabled=true; def.textContent='Selecione seu nome…'; sel.appendChild(def);
-        list.forEach(n=>{ const o=document.createElement('option'); o.textContent=n; sel.appendChild(o) });
-        show($('#g-func-wrap'))
+        L.on();
+        try{
+          const list = await apiGet({fn:'getFuncionarios', codigo});
+          const sel=$('#g-func'); sel.innerHTML='';
+          const def=document.createElement('option'); def.value=''; def.selected=true; def.disabled=true; def.textContent='Selecione seu nome…'; sel.appendChild(def);
+          list.forEach(n=>{ const o=document.createElement('option'); o.textContent=n; sel.appendChild(o) });
+          show($('#g-func-wrap'))
+        }catch(err){ alert('Erro ao carregar funcionários: '+err.message) }
+        finally{ L.off(); }
       } else { hide($('#g-func-wrap')) }
+      btn.disabled=false;
     }
+
     function entrarPortal(){
-      CONTEXTO.codigo=$('#g-filial').value; 
-      CONTEXTO.razao=(FILIAIS.find(f=>f.codigo===CONTEXTO.codigo)||{}).razao||'';
-      CONTEXTO.ident = document.querySelector('input[name="g-ident"]:checked').value==='sim';
-      CONTEXTO.funcionario = CONTEXTO.ident ? $('#g-func').value : '';
-      $('#contexto').textContent = `${CONTEXTO.razao}${CONTEXTO.ident && CONTEXTO.funcionario? ' • '+CONTEXTO.funcionario : ''}`;
-      hide($('#gate')); show($('#site'));
-      document.querySelectorAll('.card').forEach(c=>c.addEventListener('click',()=>{
-        hide($('#form-produto')); hide($('#form-ferramentas')); hide($('#form-geral'));
-        show($('#form-'+c.dataset.card));
-        window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
-      }));
+      try{
+        const ident = document.querySelector('input[name="g-ident"]:checked').value==='sim';
+        if(ident && !$('#g-func').value){ alert('Selecione o funcionário.'); return }
+        CONTEXTO.codigo=$('#g-filial').value; 
+        CONTEXTO.razao=(FILIAIS.find(f=>f.codigo===CONTEXTO.codigo)||{}).razao||'';
+        CONTEXTO.ident = ident;
+        CONTEXTO.funcionario = ident ? $('#g-func').value : '';
+        $('#contexto').textContent = `${CONTEXTO.razao}${CONTEXTO.ident && CONTEXTO.funcionario? ' • '+CONTEXTO.funcionario : ''}`;
+        hide($('#gate')); show($('#site'));
+        // bind dos cards
+        document.querySelectorAll('.card').forEach(c=>c.onclick=()=>{
+          hide($('#form-produto')); hide($('#form-ferramentas')); hide($('#form-geral'));
+          show($('#form-'+c.dataset.card));
+          window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+        });
+      }catch(err){ alert('Erro ao entrar: '+err.message) }
     }
 
     // ======== Envio ========
@@ -290,28 +318,35 @@
       } else if(tipo==='ferramentas'){
         payload.subtipo=$('#f-app').value; payload.assunto=$('#f-assunto').value.trim(); payload.mensagem=$('#f-msg').value.trim();
       } else { payload.mensagem=$('#g-msg').value.trim(); }
-      await apiPost(payload); resetar(); ev.target.reset(); alert('Enviado!'); return false;
+      try{ L.on(); await apiPost(payload); resetar(); ev.target.reset(); alert('Enviado!') }
+      catch(err){ alert('Erro: '+err.message) }
+      finally{ L.off(); }
+      return false;
     }
 
     // ======== Gerência ========
     async function entrarGerencia(){
-      const codigo=$('#adm-cod').value.trim(); const senha=$('#adm-senha').value;
-      const res = await apiPost({action:'authManager', codigo, senha});
-      $('#adm-razao').textContent = `${res.razao} — ${res.codigo}`;
-      const box=$('#adm-funcs'); box.innerHTML=''; res.funcionarios.forEach(n=>criarChip(n));
-      show($('#gerencia'));
+      try{
+        L.on();
+        const codigo=$('#adm-cod').value.trim(); const senha=$('#adm-senha').value;
+        const res = await apiPost({action:'authManager', codigo, senha});
+        $('#adm-razao').textContent = `${res.razao} — ${res.codigo}`;
+        const box=$('#adm-funcs'); box.innerHTML=''; res.funcionarios.forEach(n=>criarChip(n));
+        show($('#gerencia'));
+      }catch(err){ alert('Acesso negado: '+err.message) }
+      finally{ L.off(); }
     }
-    function criarChip(nome){
-      const box=$('#adm-funcs'); const el=document.createElement('span');
-      el.className='chip'; el.innerHTML=`<span>${nome}</span> <button>✕</button>`;
-      el.querySelector('button').onclick=()=>el.remove(); box.appendChild(el);
-    }
+    function criarChip(nome){ const box=$('#adm-funcs'); const el=document.createElement('span'); el.className='chip'; el.innerHTML=`<span>${nome}</span> <button>✕</button>`; el.querySelector('button').onclick=()=>el.remove(); box.appendChild(el) }
     function addChip(){ const v=$('#adm-nome').value.trim(); if(!v) return; criarChip(v); $('#adm-nome').value=''; $('#adm-nome').focus() }
     async function salvarGerencia(){
-      const codigo=$('#adm-cod').value.trim(); const senha=$('#adm-senha').value; const novaSenha=$('#adm-novasenha').value.trim()||null;
-      const nomes=[...document.querySelectorAll('#adm-funcs .chip span:first-child')].map(s=>s.textContent);
-      await apiPost({action:'updateFuncionarios', codigo, senha, nomes, novaSenha});
-      alert('Configuração salva.');
+      try{
+        L.on();
+        const codigo=$('#adm-cod').value.trim(); const senha=$('#adm-senha').value; const novaSenha=$('#adm-novasenha').value.trim()||null;
+        const nomes=[...document.querySelectorAll('#adm-funcs .chip span:first-child')].map(s=>s.textContent);
+        await apiPost({action:'updateFuncionarios', codigo, senha, nomes, novaSenha});
+        alert('Configuração salva.');
+      }catch(err){ alert('Erro ao salvar: '+err.message) }
+      finally{ L.off(); }
     }
 
     // start
