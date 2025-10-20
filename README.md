@@ -1,4 +1,4 @@
-,<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
@@ -199,7 +199,9 @@
 
   <script>
     // ======== CONFIG ========
+    // use exatamente a URL do seu App Web publicada:
     const APP_URL = 'https://script.google.com/macros/s/AKfycbxu_jVaotWytMOQh4UCZetFZFOxgk5ePrOkaviDd-qKNPiu2_8BjCaNczAVZzaDwAbj/exec';
+
     const $ = s=>document.querySelector(s), show=el=>el.classList.remove('hidden'), hide=el=>el.classList.add('hidden');
     const L = {on:()=>document.getElementById('loading').classList.add('show'), off:()=>document.getElementById('loading').classList.remove('show')};
 
@@ -209,11 +211,14 @@
     // ======== API helpers ========
     async function apiGet(params){
       const url = APP_URL + '?' + new URLSearchParams(params).toString();
-      const r = await fetch(url,{method:'GET'}); if(!r.ok) throw new Error('Falha '+r.status); return r.json();
+      const r = await fetch(url,{method:'GET'});
+      if(!r.ok) throw new Error('Failed to fetch');
+      return r.json();
     }
     async function apiPost(body){
       const r = await fetch(APP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!r.ok) throw new Error('Falha '+r.status); return r.json();
+      if(!r.ok) throw new Error('Failed to fetch');
+      return r.json();
     }
 
     // ======== Gate ========
@@ -244,7 +249,7 @@
           const sel=$('#g-func'); sel.innerHTML='';
           const def=document.createElement('option'); def.value=''; def.selected=true; def.disabled=true; def.textContent='Selecione seu nome…'; sel.appendChild(def);
           list.forEach(n=>{ const o=document.createElement('option'); o.textContent=n; sel.appendChild(o) });
-          show($('#g-func-wrap'))
+          show($('#g-func-wrap'));
         }catch(err){ alert('Erro ao carregar funcionários: '+err.message) }
         finally{ L.off(); }
       } else { hide($('#g-func-wrap')) }
@@ -255,8 +260,10 @@
       try{
         const ident = document.querySelector('input[name="g-ident"]:checked').value==='sim';
         if(ident && !$('#g-func').value){ alert('Selecione o funcionário.'); return }
-        CONTEXTO.codigo=$('#g-filial').value; 
-        CONTEXTO.razao=(FILIAIS.find(f=>f.codigo===CONTEXTO.codigo)||{}).razao||'';
+        // agora codigo = nome da filial (vindo do cabeçalho)
+        const sel=$('#g-filial');
+        CONTEXTO.codigo = sel.value;
+        CONTEXTO.razao  = sel.options[sel.selectedIndex]?.textContent || sel.value;
         CONTEXTO.ident = ident;
         CONTEXTO.funcionario = ident ? $('#g-func').value : '';
         $('#contexto').textContent = `${CONTEXTO.razao}${CONTEXTO.ident && CONTEXTO.funcionario? ' • '+CONTEXTO.funcionario : ''}`;
