@@ -151,7 +151,7 @@
           </div>
           <div>
             <label for="f-assunto">Assunto (opcional)</label>
-            <input id="f-assunto" type="text" placeholder="Ex.: erro no login / sugestão de tela">
+            <input id="f-assunto" type="text" placeholder="Ex.: erro no login / perda de acesso">
           </div>
         </div>
         <label for="f-msg">Mensagem</label>
