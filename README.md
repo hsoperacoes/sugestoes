@@ -178,15 +178,15 @@
         <div class="row cols-2">
           <div>
             <label for="m-equip">Equipamento</label>
-            <input id="m-equip" type="text" placeholder="Ex.: Vaso sanitário" required>
+            <input id="m-equip" type="text" placeholder="Ex.: Busca Preço" required>
           </div>
           <div>
             <label for="m-tipo">Qual manutenção</label>
-            <input id="m-tipo" type="text" placeholder="Ex.: Desentupimento / Elétrica / Hidráulica" required>
+            <input id="m-tipo" type="text" placeholder="Ex.: Não está funcionando" required>
           </div>
         </div>
         <label for="m-obs">Observações</label>
-        <textarea id="m-obs" placeholder="Descreva o que aconteceu (ex.: está entupido, vazando, etc.)" required></textarea>
+        <textarea id="m-obs" placeholder="Descreva o que aconteceu (ex.: busca preço parou de funcionar.)" required></textarea>
         <div class="actions">
           <button class="btn btn-ghost" type="button" onclick="resetar()">Cancelar</button>
           <button class="btn btn-primary" type="submit">Enviar</button>
