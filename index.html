@@ -144,8 +144,9 @@
             <label for="f-app">Ferramenta</label>
             <select id="f-app" required>
               <option value="" disabled selected>Selecione…</option>
-              <option>Otto</option>
+              <option>Academia Hering</option>
               <option>Indeva</option>
+              <option>Otto</option>
             </select>
           </div>
           <div>
