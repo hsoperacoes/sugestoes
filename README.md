@@ -200,7 +200,6 @@
 
   <script>
     // ======== CONFIG ========
-    // use exatamente a URL do seu App Web publicada:
     const APP_URL = 'https://script.google.com/macros/s/AKfycbxu_jVaotWytMOQh4UCZetFZFOxgk5ePrOkaviDd-qKNPiu2_8BjCaNczAVZzaDwAbj/exec';
 
     const $ = s=>document.querySelector(s), show=el=>el.classList.remove('hidden'), hide=el=>el.classList.add('hidden');
@@ -214,12 +213,18 @@
       const url = APP_URL + '?' + new URLSearchParams(params).toString();
       const r = await fetch(url,{method:'GET'});
       if(!r.ok) throw new Error('Failed to fetch');
-      return r.json();
+      const data = await r.json();
+      if(data && data.error) throw new Error(data.error);
+      return data;
     }
+
+    // >>> ÚNICA MUDANÇA: sem header Content-Type pra evitar preflight <<<
     async function apiPost(body){
-      const r = await fetch(APP_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const r = await fetch(APP_URL,{method:'POST', body:JSON.stringify(body)});
       if(!r.ok) throw new Error('Failed to fetch');
-      return r.json();
+      const data = await r.json();
+      if(data && data.error) throw new Error(data.error);
+      return data;
     }
 
     // ======== Gate ========
@@ -227,9 +232,9 @@
       try{
         L.on();
         const {filiais} = await apiGet({fn:'getFiliais'});
-        FILIAIS = filiais;
+        FILIAIS = filiais || [];
         const sel=$('#g-filial'); sel.innerHTML='';
-        filiais.forEach(f=>{ const o=document.createElement('option'); o.value=f.codigo; o.textContent=f.razao; sel.appendChild(o) });
+        FILIAIS.forEach(f=>{ const o=document.createElement('option'); o.value=f.codigo; o.textContent=f.razao; sel.appendChild(o) });
         await atualizarIdentGate();
         $('#g-filial').addEventListener('change', atualizarIdentGate);
         document.querySelectorAll('input[name="g-ident"]').forEach(r=>r.addEventListener('change', atualizarIdentGate));
@@ -249,7 +254,7 @@
           const list = await apiGet({fn:'getFuncionarios', codigo});
           const sel=$('#g-func'); sel.innerHTML='';
           const def=document.createElement('option'); def.value=''; def.selected=true; def.disabled=true; def.textContent='Selecione seu nome…'; sel.appendChild(def);
-          list.forEach(n=>{ const o=document.createElement('option'); o.textContent=n; sel.appendChild(o) });
+          (list||[]).forEach(n=>{ const o=document.createElement('option'); o.textContent=n; sel.appendChild(o) });
           show($('#g-func-wrap'));
         }catch(err){ alert('Erro ao carregar funcionários: '+err.message) }
         finally{ L.off(); }
@@ -261,7 +266,6 @@
       try{
         const ident = document.querySelector('input[name="g-ident"]:checked').value==='sim';
         if(ident && !$('#g-func').value){ alert('Selecione o funcionário.'); return }
-        // agora codigo = nome da filial (vindo do cabeçalho)
         const sel=$('#g-filial');
         CONTEXTO.codigo = sel.value;
         CONTEXTO.razao  = sel.options[sel.selectedIndex]?.textContent || sel.value;
@@ -269,14 +273,10 @@
         CONTEXTO.funcionario = ident ? $('#g-func').value : '';
         $('#contexto').textContent = `${CONTEXTO.razao}${CONTEXTO.ident && CONTEXTO.funcionario? ' • '+CONTEXTO.funcionario : ''}`;
 
-        // Remove completamente o gate do DOM
         const gate = document.getElementById('gate');
         if(gate){ gate.parentNode.removeChild(gate); }
-
-        // Exibe o site
         show(document.getElementById('site'));
 
-        // bind dos cards
         document.querySelectorAll('.card').forEach(c=>c.onclick=()=>{
           hide($('#form-produto')); hide($('#form-ferramentas')); hide($('#form-geral')); hide($('#form-manutencoes'));
           show($('#form-'+c.dataset.card));
@@ -308,7 +308,6 @@
       return false;
     }
 
-    // start
     window.addEventListener('load', boot);
   </script>
 </body>
